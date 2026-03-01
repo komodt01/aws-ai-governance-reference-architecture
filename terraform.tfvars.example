@@ -1,0 +1,24 @@
+# terraform.tfvars
+environment = "dev"
+aws_region  = "us-east-1"
+
+owner_tag   = ""
+cost_center = "FIN-ARCH"
+
+sagemaker_endpoint_name = "ai-payments-dev-endpoint"
+
+# REQUIRED: You must upload a model artifact here (or change to your real path)
+anomaly_model_s3_uri = "s3://YOUR_BUCKET/model.tar.gz""
+
+# Optional tuning
+kinesis_shard_count     = 1
+anomaly_score_threshold = 0.85
+
+sagemaker_serverless_memory_mb       = 2048
+sagemaker_serverless_max_concurrency = 10
+
+# Optional: only change if you want a different model
+bedrock_model_id         = "anthropic.claude-3-sonnet-20240229-v1:0"
+audit_log_retention_days = 90
+
+
