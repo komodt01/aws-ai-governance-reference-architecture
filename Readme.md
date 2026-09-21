@@ -16,13 +16,13 @@ A financial services organization wants to evaluate payment events for potential
 
 The architecture separates several responsibilities:
 
-* Payment event ingestion
-* Event processing
-* Model inference
-* AI-assisted exception handling
-* Monitoring and audit logging
-* Human escalation
-* Model governance
+- Payment event ingestion
+- Event processing
+- Model inference
+- AI-assisted exception handling
+- Monitoring and audit logging
+- Human escalation
+- Model governance
 
 This separation allows security and operational controls to be applied at multiple points rather than treating the AI model as a standalone component.
 
@@ -38,23 +38,23 @@ Supporting components provide additional governance and operational capabilities
 
 ### 1. Event Ingestion
 
-Amazon Kinesis Data Streams receives payment events and provides the event-driven entry point into the processing pipeline.
+Amazon Kinesis Data Streams provides the event-driven entry point for payment events.
 
 ### 2. Event Processing
 
-AWS Lambda processes incoming events and coordinates downstream inference and routing.
+AWS Lambda provides the processing layer between incoming payment events and downstream inference and AI services.
 
 ### 3. Model Inference
 
-Amazon SageMaker Serverless Inference provides anomaly scoring without requiring a continuously running inference endpoint.
+Amazon SageMaker Serverless Inference provides the infrastructure for anomaly-detection model inference without requiring continuously running inference capacity.
 
 ### 4. Risk Evaluation
 
-Inference results can be evaluated against defined anomaly thresholds to determine whether additional operational handling is required.
+The architecture provides a configurable anomaly threshold that can be used to determine when additional operational handling is required.
 
 ### 5. AI-Assisted Exception Handling
 
-An Amazon Bedrock gateway is included as a separate architectural component for controlled AI-assisted exception handling and operational workflows.
+A separate Amazon Bedrock gateway provides the infrastructure for controlled AI-assisted exception handling and operational workflows.
 
 ### 6. Monitoring and Auditability
 
@@ -62,24 +62,26 @@ Amazon CloudWatch provides logs, metrics, alarms, and centralized operational vi
 
 ### 7. Governance and Escalation
 
-Governance components support model oversight, monitoring, alerting, and escalation paths where automated processing should not be the final decision point.
+EventBridge and SNS provide the foundation for routing AI recommendations into human review and notification workflows rather than treating AI output as an automatic final decision.
 
 ---
 
 ## Security and Governance Controls
 
-The architecture demonstrates several controls relevant to enterprise AI workloads:
+The Terraform architecture demonstrates controls relevant to enterprise AI workloads:
 
-* Separate IAM roles for major workload components
-* Least-privilege access patterns
-* KMS-backed encryption where configured
-* Centralized logging and defined log retention
-* CloudWatch metrics and alarms
-* Dead-letter handling for failed processing
-* Anomaly threshold monitoring
-* Human escalation paths
-* Separation between inference, monitoring, and governance responsibilities
-* Infrastructure defined through Terraform rather than manually configured resources
+- Separate IAM roles for major workload components
+- Scoped service permissions
+- KMS-backed encryption for supported resources
+- Centralized logging and configurable log retention
+- CloudWatch metrics and alarms
+- SQS dead-letter handling for failed processing
+- X-Ray tracing
+- Model-performance monitoring
+- EventBridge and SNS-based human escalation pattern
+- SageMaker Model Registry foundation for model versioning and approval workflows
+- Separation between inference, AI integration, monitoring, and governance responsibilities
+- Infrastructure defined through Terraform
 
 The intent is to demonstrate that AI governance depends on controls surrounding the model as much as the model itself.
 
@@ -87,17 +89,20 @@ The intent is to demonstrate that AI governance depends on controls surrounding 
 
 ## Key AWS Services
 
-| Service                     | Architectural Role                                         |
-| --------------------------- | ---------------------------------------------------------- |
-| Amazon Kinesis Data Streams | Payment event ingestion                                    |
-| AWS Lambda                  | Event processing and workflow integration                  |
-| Amazon SageMaker            | Serverless anomaly detection inference                     |
-| Amazon Bedrock              | AI-assisted exception and operational workflow integration |
-| Amazon CloudWatch           | Logging, metrics, alarms, and operational visibility       |
-| Amazon SNS                  | Alerting and escalation                                    |
-| Amazon SQS                  | Dead-letter handling                                       |
-| AWS IAM                     | Workload identity and least-privilege authorization        |
-| AWS KMS                     | Encryption controls                                        |
+| Service | Architectural Role |
+|---|---|
+| Amazon Kinesis Data Streams | Payment event ingestion |
+| AWS Lambda | Event processing and service integration |
+| Amazon SageMaker | Serverless inference and model governance foundation |
+| Amazon Bedrock | AI-assisted exception-handling integration |
+| Amazon CloudWatch | Logging, metrics, alarms, and operational visibility |
+| Amazon EventBridge | AI recommendation routing for review workflows |
+| Amazon SNS | Operational alerts and approval notifications |
+| Amazon SQS | Dead-letter handling |
+| Amazon DynamoDB | AI scoring and recommendation result storage |
+| AWS IAM | Workload identity and scoped authorization |
+| AWS KMS | Encryption controls |
+| AWS X-Ray | Distributed tracing |
 
 ---
 
@@ -112,56 +117,3 @@ modules/
 ├── bedrock-gateway/
 ├── monitoring/
 └── governance/
-```
-
-Each module represents a distinct architectural responsibility.
-
-This modular structure helps separate the data path from inference, monitoring, and governance controls while keeping the overall environment reproducible through Infrastructure as Code.
-
----
-
-## Architecture Principles
-
-### Govern the Workflow, Not Just the Model
-
-AI risk exists throughout the processing path. Identity, logging, monitoring, escalation, and operational controls therefore surround the inference layer.
-
-### Maintain Human Escalation
-
-Automated scoring does not have to represent the final operational decision. Higher-risk conditions can be surfaced for additional review.
-
-### Make AI Activity Observable
-
-Inference activity, failures, anomaly conditions, and AI-assisted workflows should generate evidence that can be monitored and reviewed.
-
-### Separate Responsibilities
-
-Data processing, inference, AI integration, monitoring, and governance are separated into distinct Terraform modules rather than implemented as one unrestricted workload.
-
-### Design for Failure
-
-Dead-letter handling, monitoring, alarms, and escalation paths acknowledge that production AI workflows must account for processing failures and unexpected conditions.
-
-### Consider Cost as an Architecture Constraint
-
-Serverless inference is used to demonstrate an architecture that avoids maintaining continuously running inference capacity for an intermittent workload.
-
----
-
-## What This Project Demonstrates
-
-This project is intended as an architecture and implementation lab rather than a production payment-processing platform.
-
-It demonstrates how AWS services and Terraform can be combined to explore:
-
-* Governed AI inference
-* Event-driven financial processing
-* AI workload observability
-* Least-privilege IAM
-* Human escalation
-* Failure handling
-* Model governance
-* Infrastructure as Code
-* Security architecture around AI-enabled workflows
-
-The broader architectural lesson is that deploying a model is only one part of enterprise AI adoption. Identity, monitoring, auditability, operational ownership, exception handling, and governance must be designed around the AI workload from the beginning.
