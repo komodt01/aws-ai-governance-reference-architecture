@@ -117,3 +117,80 @@ modules/
 ├── bedrock-gateway/
 ├── monitoring/
 └── governance/
+```
+
+Each module represents a distinct architectural responsibility.
+
+This modular structure separates the event-processing path from inference, generative AI integration, monitoring, and governance while keeping the environment reproducible through Infrastructure as Code.
+
+---
+
+## Architecture Principles
+
+### Govern the Workflow, Not Just the Model
+
+AI risk exists throughout the processing path. Identity, logging, monitoring, escalation, and operational controls therefore surround the inference layer.
+
+### Separate Model Output From Business Decisions
+
+Model output should be treated as an input into an operational decision process rather than automatically becoming the decision itself.
+
+The architecture supports the pattern:
+
+**Model Output → Policy Evaluation → Human Review / Operational Response**
+
+### Make AI Activity Observable
+
+AI-enabled workloads require logging, metrics, alerting, tracing, and retained evidence so that activity can be investigated and reviewed.
+
+### Separate Responsibilities
+
+Data processing, inference, Bedrock integration, monitoring, and governance are separated into distinct Terraform modules rather than implemented as one broadly privileged workload.
+
+### Design for Failure
+
+Dead-letter handling, alarms, monitoring, and escalation patterns recognize that AI-enabled workflows must account for processing failures and unexpected conditions.
+
+### Consider Cost as an Architecture Constraint
+
+SageMaker Serverless Inference demonstrates an approach that avoids continuously running inference capacity for intermittent workloads while still requiring consideration of concurrency, latency, and workload volume.
+
+---
+
+## Implementation Scope
+
+This project is an architecture and implementation lab rather than a production payment-processing platform.
+
+The Terraform implements the supporting AWS infrastructure and governance controls. Application handlers and model artifacts are represented by placeholders where production application logic is outside the scope of the architecture lab.
+
+The project therefore demonstrates the **control architecture surrounding an AI workload**, not a completed production fraud-detection application.
+
+Model deployment approval enforcement, automated model retraining, production application logic, and operational human approval interfaces would require additional implementation beyond this reference architecture.
+
+---
+
+## What This Project Demonstrates
+
+This project demonstrates how AWS services and Terraform can be combined to explore:
+
+- Governed AI infrastructure
+- Event-driven financial processing architecture
+- Serverless model inference
+- AI workload observability
+- Least-privilege IAM patterns
+- Human escalation patterns
+- Failure handling
+- Model governance foundations
+- Model-performance monitoring
+- Infrastructure as Code
+- Security architecture around AI-enabled workflows
+
+---
+
+## Architectural Takeaway
+
+Deploying an AI model is only one part of enterprise AI adoption.
+
+**Identity, data flow, inference, monitoring, policy, escalation, and auditability must be designed around the AI workload from the beginning.**
+
+This project focuses on that surrounding control architecture and the security and governance decisions required to make AI-enabled workloads manageable in an enterprise environment.
