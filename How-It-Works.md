@@ -1,188 +1,149 @@
-# How It Works — AI Payments Governance Architecture
+# Security and Compliance Mapping
 
 ## Purpose
 
-This document explains how payment events move through the architecture and where security, monitoring, and governance controls are applied.
+This document maps security capabilities demonstrated in the AI Payments Reference Architecture to selected security and compliance control areas.
 
-The design separates event ingestion, processing, inference, AI-assisted exception handling, observability, and governance so that each responsibility can be controlled and monitored independently.
+The mappings are intended to show how architectural and technical controls can support broader governance requirements.
 
----
-
-## End-to-End Flow
-
-The primary processing path is:
-
-**Payment Event → Kinesis → Lambda → SageMaker Inference → Risk Evaluation → Monitoring / Escalation**
-
-Supporting components provide logging, alerting, failure handling, AI-assisted workflows, and governance capabilities.
+They do not represent certification, formal compliance validation, or complete implementation of any framework.
 
 ---
 
-## 1. Payment Event Ingestion
+## NIST SP 800-53 Alignment
 
-Amazon Kinesis Data Streams provides the entry point for payment events.
+### AC-6 — Least Privilege
 
-Using a streaming service separates event producers from downstream processing components and allows the architecture to process events asynchronously.
+**Architecture Pattern**
 
-The Kinesis stream feeds the Lambda-based processing layer.
+IAM roles are separated across workload components so that services can be granted permissions based on their individual responsibilities.
 
-### Architectural Considerations
+**Demonstrated Through**
 
-* Event producers remain decoupled from inference services.
-* Streaming supports near-real-time processing patterns.
-* Kinesis metrics provide visibility into processing delays and stream health.
-
----
-
-## 2. Event Processing
-
-AWS Lambda consumes records from the Kinesis stream.
-
-The processing layer coordinates the workflow between incoming payment events and downstream AI services.
-
-Its responsibilities include:
-
-* Receiving payment records
-* Parsing event data
-* Coordinating inference requests
-* Evaluating downstream results
-* Routing events for additional handling when required
-
-Failed processing can be directed to dead-letter handling rather than silently discarded.
+* Component-specific IAM roles
+* Scoped service permissions
+* Separation between processing, inference, monitoring, and governance functions
 
 ---
 
-## 3. Anomaly Detection Inference
+### AU-2 — Event Logging
 
-Amazon SageMaker Serverless Inference provides the model inference layer.
+**Architecture Pattern**
 
-Payment information is evaluated by the anomaly detection model and an inference result can be compared against a configured anomaly threshold.
+Application and service activity is captured through CloudWatch logging.
 
-Serverless inference was selected to demonstrate an architecture that does not require continuously running inference capacity.
+**Demonstrated Through**
 
-### Architectural Tradeoff
-
-Serverless inference can reduce idle infrastructure cost for intermittent workloads, but concurrency and workload behavior still need to be understood when sizing the service.
-
----
-
-## 4. Risk Evaluation
-
-Inference results provide a signal that downstream processing can use when determining whether an event requires additional attention.
-
-The anomaly threshold is configurable rather than embedded as an architectural constant.
-
-This separates model output from the operational response to that output.
-
-A model can produce a score, while the surrounding workflow determines what action should follow.
+* Lambda logging
+* AI workload logging
+* Centralized CloudWatch log groups
+* Explicit log retention configuration
 
 ---
 
-## 5. AI-Assisted Exception Handling
+### AU-6 — Audit Record Review, Analysis, and Reporting
 
-The architecture contains a separate Amazon Bedrock gateway for AI-assisted exception handling and operational workflows.
+**Architecture Pattern**
 
-Keeping this integration separate from the primary inference layer creates a clearer control boundary between anomaly detection and generative AI capabilities.
+Operational and AI-related activity can be surfaced through metrics, filters, alarms, and centralized monitoring.
 
-Bedrock activity can therefore be governed and observed independently rather than being embedded directly into the payment-processing component.
+**Demonstrated Through**
+
+* CloudWatch metric filters
+* CloudWatch alarms
+* Anomaly-related monitoring
+* Operational visibility through dashboards
 
 ---
 
-## 6. Monitoring and Observability
+### SI-4 — System Monitoring
 
-Amazon CloudWatch provides centralized operational visibility.
+**Architecture Pattern**
 
-Monitoring capabilities include:
+The environment monitors workload behavior and conditions that may require investigation or operational response.
 
-* Application and service logs
-* Metric filters
-* Operational alarms
+**Demonstrated Through**
+
 * Inference error monitoring
-* Stream health monitoring
+* Kinesis stream monitoring
 * Anomaly-related metrics
-* Dashboard visibility
-
-Log retention is explicitly configured so that audit data is managed intentionally rather than relying solely on service defaults.
-
----
-
-## 7. Failure Handling
-
-The architecture accounts for processing failures through dead-letter handling and monitoring.
-
-Instead of assuming every event will successfully move through the pipeline, failures can be retained for investigation and remediation.
-
-This supports an important architecture principle:
-
-**A governed system must make failures visible.**
+* CloudWatch alarms
+* Centralized dashboard visibility
 
 ---
 
-## 8. Governance and Human Escalation
+### SC-13 — Cryptographic Protection
 
-Automated inference does not have to represent the final decision point.
+**Architecture Pattern**
 
-The architecture includes alerting and escalation capabilities so that higher-risk conditions can be surfaced for operational review.
+Encryption capabilities are applied to supported architecture components.
 
-This separates:
+**Demonstrated Through**
 
-**Model Output → Policy Evaluation → Operational Response**
-
-That distinction is important in governed AI systems because model output is an input into a decision process rather than automatically being treated as the decision itself.
-
----
-
-## 9. Identity and Access Control
-
-AWS IAM roles are separated across architecture components.
-
-This limits the need for a single broadly privileged execution identity and allows permissions to be associated with specific workload responsibilities.
-
-The design follows a least-privilege approach:
-
-**Component → Required AWS Service → Required Action**
-
-rather than granting broad account-level permissions to the entire workflow.
+* AWS KMS integration
+* Encryption of configured messaging resources
 
 ---
 
-## 10. Infrastructure as Code
+## ISO/IEC 27001 Alignment
 
-Terraform defines the architecture and coordinates the primary modules:
+ISO/IEC 27001 establishes an information security management system rather than prescribing a specific AWS architecture.
 
-```text
-data-pipeline
-inference
-bedrock-gateway
-monitoring
-governance
-```
+The controls demonstrated in this project can provide technical evidence supporting selected information security objectives.
 
-Separating these responsibilities into modules makes architectural boundaries visible in the infrastructure definition and allows individual components to evolve independently.
+### Identity and Access Management
+
+Supporting architecture patterns include:
+
+* IAM role separation
+* Least-privilege authorization
+* Separation of workload responsibilities
+
+### Logging and Monitoring
+
+Supporting architecture patterns include:
+
+* Centralized CloudWatch logging
+* Defined log retention
+* Metric filters
+* Alarms
+* Operational dashboards
+
+### Incident and Exception Handling
+
+Supporting architecture patterns include:
+
+* Alerting
+* Dead-letter handling
+* Operational escalation
+* Human review paths
+
+### Cryptographic Controls
+
+Supporting architecture patterns include:
+
+* AWS KMS integration
+* Encryption for supported resources
 
 ---
 
-## Key Architecture Decisions
+## AI Governance Considerations
 
-The project demonstrates several broader design decisions:
+Traditional security controls remain necessary for AI workloads, but AI introduces additional governance considerations.
 
-* Use event-driven processing to decouple payment ingestion from downstream services.
-* Separate model inference from generative AI integration.
-* Treat observability as part of governance rather than an operational afterthought.
-* Maintain escalation paths for conditions requiring human review.
-* Apply workload-specific IAM rather than shared broad permissions.
-* Design explicit failure handling into the processing path.
-* Use Infrastructure as Code to make architecture configuration reproducible.
-* Consider cost and workload characteristics when selecting inference infrastructure.
+This architecture demonstrates several relevant patterns:
+
+* Model activity should be observable.
+* Model output should be distinguishable from operational policy decisions.
+* Higher-risk conditions should have an escalation path.
+* AI integrations should use scoped identities and permissions.
+* Failures should generate evidence rather than disappear silently.
+* Logging and monitoring should extend across the AI processing lifecycle.
 
 ---
 
-## Architecture Takeaway
+## Important Scope Note
 
-The central lesson of this project is that AI governance is not a single service or control.
+This project is a reference architecture and implementation lab.
 
-A governed AI workload requires coordinated controls around the model:
-
-**Identity → Data Flow → Inference → Monitoring → Policy → Escalation → Audit**
-
-The model performs inference, but the surrounding architecture determines how safely and responsibly that inference can be used.
+The mappings above demonstrate how specific technical controls can contribute to broader security and compliance objectives. Actual regulatory or framework compliance would require additional organizational controls, policies, procedures, evidence collection, risk assessment, testing, and independent validation.
