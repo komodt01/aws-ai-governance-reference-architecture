@@ -6,8 +6,11 @@
 # - Audit trail configuration
 
 # ------ MODEL REGISTRY ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# SageMaker Model Registry provides the foundation for model versioning and approval workflows
-# No model reaches production without approval status = Approved."
+# SageMaker Model Registry provides the foundation for model versioning and approval workflows.
+# Production approval enforcement would require integration with the model deployment pipeline.
+resource "aws_sagemaker_model_package_group" "anomaly_models" {
+  model_package_group_name        = "${var.name_prefix}-anomaly-models"
+  model_package_group_description = "Versioned registry for payment anomaly detection models. Approval required before production deployment."
 
   tags = {
     Name       = "${var.name_prefix}-anomaly-models"
