@@ -132,7 +132,128 @@ The current Lambda handler is a placeholder, so production prompt construction, 
 
 Amazon EventBridge and Amazon SNS provide the foundation for a human review workflow.
 
-The EventBridge rule looks for a `BedrockRecommendation` event where:
+The EventBridge rule looks for a `BedrockRecommendation` event where `requires_approval = true`.
+
+Matching events can be routed to the SNS approval-notification topic.
+
+This demonstrates the architectural pattern:
+
+**AI Recommendation → Governance Event → Notification → Human Review**
+
+The project does not implement a production approval application or complete approve/reject workflow.
+
+The EventBridge and SNS resources establish the infrastructure that such a workflow could use.
+
+---
+
+## 7. Monitoring and Audit Infrastructure
+
+Amazon CloudWatch provides the central monitoring layer.
+
+The monitoring module provisions:
+
+- AI audit log group
+- Configurable log retention
+- Operational alarms
+- CloudWatch dashboard
+- SNS operational alerts
+
+The dashboard provides visibility into architecture metrics such as:
+
+- Anomaly detection rate
+- SageMaker inference latency
+- Bedrock gateway invocations
+- Kinesis processing lag
+
+CloudWatch alarms also monitor conditions such as SageMaker inference errors and Kinesis iterator age.
+
+---
+
+## 8. AI Results and Governance Data
+
+Amazon DynamoDB provides storage infrastructure for AI scoring results and Bedrock recommendations.
+
+The table includes:
+
+- On-demand capacity
+- Server-side encryption
+- Point-in-time recovery
+- TTL support
+- Result-type indexing
+
+Separating results from raw payment data supports a design where governance and operational evidence can be retained without unnecessarily duplicating the original payment payload.
+
+---
+
+## 9. Model Governance
+
+Amazon SageMaker Model Registry provides the foundation for model versioning and approval workflows.
+
+The architecture creates a model package group that can be used as part of a broader model lifecycle process.
+
+Production enforcement of model approval status would require integration with the model deployment pipeline and is outside the scope of this project.
+
+---
+
+## 10. Model Performance Monitoring
+
+The governance module defines a CloudWatch alarm for a custom `ModelPrecision` metric.
+
+The alarm represents a model-performance monitoring pattern where degraded precision can trigger a governance notification.
+
+This can provide an indication that model performance should be investigated.
+
+Automated drift detection, metric publication, and model retraining are not implemented by this architecture and would require additional components.
+
+---
+
+## 11. Identity and Access Control
+
+Major workload components use separate IAM roles rather than sharing a single broad execution identity.
+
+Permissions are scoped around the responsibilities of each component, including:
+
+- Kinesis access
+- SageMaker invocation
+- Bedrock invocation
+- DynamoDB access
+- EventBridge publishing
+- CloudWatch logging
+- X-Ray tracing
+
+This supports least-privilege design and makes service boundaries easier to review.
+
+---
+
+## 12. Infrastructure as Code
+
+Terraform defines the environment through five primary modules:
 
 ```text
-requires_approval = true
+modules/
+├── data-pipeline/
+├── inference/
+├── bedrock-gateway/
+├── monitoring/
+└── governance/
+```
+
+The root configuration connects these modules through explicit inputs and outputs.
+
+This makes the relationships between architecture components visible in code and allows the infrastructure to be recreated consistently.
+
+---
+
+## Architecture Takeaway
+
+The central lesson of this project is that AI governance is not a control added only to the model.
+
+A governed AI architecture must consider the complete workflow:
+
+**Identity → Data Flow → Inference → Monitoring → Policy → Escalation → Audit**
+
+The model produces information.
+
+The surrounding architecture determines who can access it, how it is monitored, how failures are handled, when human review is introduced, and how evidence is retained.
+
+That surrounding control architecture is the primary focus of this project.
