@@ -6,11 +6,8 @@
 # - Audit trail configuration
 
 # ------ MODEL REGISTRY ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# SageMaker Model Registry enforces model approval workflow
-# No model reaches production without approval status = Approved
-resource "aws_sagemaker_model_package_group" "anomaly_models" {
-  model_package_group_name        = "${var.name_prefix}-anomaly-models"
-  model_package_group_description = "Versioned registry for payment anomaly detection models. Approval required before production deployment."
+# SageMaker Model Registry provides the foundation for model versioning and approval workflows
+# No model reaches production without approval status = Approved."
 
   tags = {
     Name       = "${var.name_prefix}-anomaly-models"
@@ -19,9 +16,10 @@ resource "aws_sagemaker_model_package_group" "anomaly_models" {
   }
 }
 
-# ------ DRIFT DETECTION ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ------ MODEL PERFORMANCE MONITORING ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # CloudWatch alarm for model performance degradation
-# Triggers retraining pipeline when drift detected
+# Alerts when the configured model performance metric falls below the defined threshold
+# Automated retraining is outside the scope of this reference architecture.
 resource "aws_cloudwatch_metric_alarm" "model_drift" {
   alarm_name          = "${var.name_prefix}-model-drift"
   alarm_description   = "Model performance below baseline - possible drift. Retraining pipeline should be evaluated."
