@@ -1,11 +1,12 @@
 # Module: governance
 # AI governance infrastructure:
-# - SageMaker Model Registry for version control and approval workflow
+# - SageMaker Model Registry for version control and approval workflows
 # - IAM least-privilege policies scoped to AI components
-# - Model drift detection alarms
+# - Model performance monitoring alarms
 # - Audit trail configuration
 
-# ------ MODEL REGISTRY ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ------ MODEL REGISTRY ------
+
 # SageMaker Model Registry provides the foundation for model versioning and approval workflows.
 # Production approval enforcement would require integration with the model deployment pipeline.
 resource "aws_sagemaker_model_package_group" "anomaly_models" {
@@ -19,7 +20,8 @@ resource "aws_sagemaker_model_package_group" "anomaly_models" {
   }
 }
 
-# ------ MODEL PERFORMANCE MONITORING ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ------ MODEL PERFORMANCE MONITORING ------
+
 # CloudWatch alarm for model performance degradation
 # Alerts when the configured model performance metric falls below the defined threshold
 # Automated retraining is outside the scope of this reference architecture.
@@ -43,7 +45,8 @@ resource "aws_cloudwatch_metric_alarm" "model_drift" {
   }
 }
 
-# ------ GOVERNANCE ALERTS ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ------ GOVERNANCE ALERTS ------
+
 resource "aws_sns_topic" "governance_alerts" {
   name              = "${var.name_prefix}-governance-alerts"
   kms_master_key_id = "alias/aws/sns"
@@ -53,9 +56,10 @@ resource "aws_sns_topic" "governance_alerts" {
     Purpose = "model-governance-alerts"
   }
 }
-# ------ AUDIT LOG METRIC FILTERS ---------------------------------------------------------------------------------------------------------------------------------------------------------
-# Extract structured metrics from audit logs for governance reporting
 
+# ------ AUDIT LOG METRIC FILTERS ------
+
+# Extract structured metrics from audit logs for governance reporting
 resource "aws_cloudwatch_log_metric_filter" "bedrock_invocations" {
   name           = "${var.name_prefix}-bedrock-invocations"
   pattern        = "{ $.event_type = \"BedrockInvocation\" }"
@@ -92,7 +96,8 @@ resource "aws_cloudwatch_log_metric_filter" "anomaly_flags" {
   }
 }
 
-# ------ KINESIS STREAM POLICY ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ------ KINESIS STREAM POLICY ------
+
 # Restrict Kinesis stream access to authorized AI pipeline components only
 resource "aws_kinesis_resource_policy" "pipeline_access" {
   resource_arn = var.kinesis_stream_arn
