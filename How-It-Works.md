@@ -1,149 +1,138 @@
-# Security and Compliance Mapping
+# How It Works — AI Payments Governance Reference Architecture
 
-## Purpose
+## Overview
 
-This document maps security capabilities demonstrated in the AI Payments Reference Architecture to selected security and compliance control areas.
+This project demonstrates how security and governance controls can be designed around an AI-enabled payment anomaly detection workflow on AWS.
 
-The mappings are intended to show how architectural and technical controls can support broader governance requirements.
+The architecture separates event ingestion, processing, model inference, generative AI integration, monitoring, and governance into distinct components.
 
-They do not represent certification, formal compliance validation, or complete implementation of any framework.
-
----
-
-## NIST SP 800-53 Alignment
-
-### AC-6 — Least Privilege
-
-**Architecture Pattern**
-
-IAM roles are separated across workload components so that services can be granted permissions based on their individual responsibilities.
-
-**Demonstrated Through**
-
-* Component-specific IAM roles
-* Scoped service permissions
-* Separation between processing, inference, monitoring, and governance functions
+The Terraform provisions the supporting AWS infrastructure. Application handlers and production model artifacts are represented by placeholders where application implementation is outside the scope of the architecture lab.
 
 ---
 
-### AU-2 — Event Logging
+## Processing Flow
 
-**Architecture Pattern**
+The primary architectural flow is:
 
-Application and service activity is captured through CloudWatch logging.
+**Payment Event → Kinesis → Lambda → SageMaker Inference → Risk Evaluation → Monitoring / Escalation**
 
-**Demonstrated Through**
+Amazon Bedrock provides a separate path for AI-assisted exception handling.
 
-* Lambda logging
-* AI workload logging
-* Centralized CloudWatch log groups
-* Explicit log retention configuration
+Governance and monitoring services surround these processing paths rather than being embedded into a single application component.
 
 ---
 
-### AU-6 — Audit Record Review, Analysis, and Reporting
+## 1. Payment Event Ingestion
 
-**Architecture Pattern**
+Amazon Kinesis Data Streams provides the entry point for payment events.
 
-Operational and AI-related activity can be surfaced through metrics, filters, alarms, and centralized monitoring.
+The stream is configured with:
 
-**Demonstrated Through**
+- 24-hour retention
+- AWS-managed KMS encryption
+- Resource tagging identifying the workload data classification
 
-* CloudWatch metric filters
-* CloudWatch alarms
-* Anomaly-related monitoring
-* Operational visibility through dashboards
-
----
-
-### SI-4 — System Monitoring
-
-**Architecture Pattern**
-
-The environment monitors workload behavior and conditions that may require investigation or operational response.
-
-**Demonstrated Through**
-
-* Inference error monitoring
-* Kinesis stream monitoring
-* Anomaly-related metrics
-* CloudWatch alarms
-* Centralized dashboard visibility
+Kinesis separates event producers from downstream processing and provides the event source for the pipeline-processing Lambda function.
 
 ---
 
-### SC-13 — Cryptographic Protection
+## 2. Event Processing
 
-**Architecture Pattern**
+AWS Lambda provides the processing layer for events received from Kinesis.
 
-Encryption capabilities are applied to supported architecture components.
+The Terraform configures the Lambda execution role with permissions required to:
 
-**Demonstrated Through**
+- Read records from Kinesis
+- Invoke the inference Lambda
+- Invoke the Bedrock gateway Lambda
+- Write CloudWatch logs
+- Publish X-Ray tracing information
 
-* AWS KMS integration
-* Encryption of configured messaging resources
+A Kinesis event source mapping connects the stream to the processing function.
 
----
+### Failure Handling
 
-## ISO/IEC 27001 Alignment
+An Amazon SQS dead-letter queue is configured for failed event processing.
 
-ISO/IEC 27001 establishes an information security management system rather than prescribing a specific AWS architecture.
+The queue uses KMS-backed encryption and a 14-day message retention period.
 
-The controls demonstrated in this project can provide technical evidence supporting selected information security objectives.
-
-### Identity and Access Management
-
-Supporting architecture patterns include:
-
-* IAM role separation
-* Least-privilege authorization
-* Separation of workload responsibilities
-
-### Logging and Monitoring
-
-Supporting architecture patterns include:
-
-* Centralized CloudWatch logging
-* Defined log retention
-* Metric filters
-* Alarms
-* Operational dashboards
-
-### Incident and Exception Handling
-
-Supporting architecture patterns include:
-
-* Alerting
-* Dead-letter handling
-* Operational escalation
-* Human review paths
-
-### Cryptographic Controls
-
-Supporting architecture patterns include:
-
-* AWS KMS integration
-* Encryption for supported resources
+This provides a failure path so processing problems can be investigated rather than silently discarded.
 
 ---
 
-## AI Governance Considerations
+## 3. Model Inference
 
-Traditional security controls remain necessary for AI workloads, but AI introduces additional governance considerations.
+The inference module provisions Amazon SageMaker Serverless Inference infrastructure.
 
-This architecture demonstrates several relevant patterns:
+The Terraform creates:
 
-* Model activity should be observable.
-* Model output should be distinguishable from operational policy decisions.
-* Higher-risk conditions should have an escalation path.
-* AI integrations should use scoped identities and permissions.
-* Failures should generate evidence rather than disappear silently.
-* Logging and monitoring should extend across the AI processing lifecycle.
+- SageMaker execution role
+- SageMaker model definition
+- Serverless endpoint configuration
+- SageMaker endpoint
+- Lambda function used to invoke the endpoint
+- CloudWatch logging
+- X-Ray tracing
+
+Serverless inference was selected to demonstrate an architecture that does not require continuously running inference capacity for an intermittent workload.
+
+Memory and concurrency are configurable so that capacity remains an explicit architecture decision.
+
+### Implementation Scope
+
+The repository provisions the infrastructure required to host and invoke the model.
+
+Production model artifacts and inference application logic are outside the scope of this architecture lab and are represented by placeholders.
+
+The project therefore demonstrates the **inference architecture and control boundaries**, not a completed production anomaly-detection application.
 
 ---
 
-## Important Scope Note
+## 4. Risk Evaluation
 
-This project is a reference architecture and implementation lab.
+The architecture includes a configurable anomaly threshold.
 
-The mappings above demonstrate how specific technical controls can contribute to broader security and compliance objectives. Actual regulatory or framework compliance would require additional organizational controls, policies, procedures, evidence collection, risk assessment, testing, and independent validation.
+This represents the point where model output can be evaluated against operational policy.
+
+The intended decision pattern is:
+
+**Model Output → Policy Evaluation → Operational Response**
+
+This distinction is important because a model score is a signal. It does not automatically have to become a business decision.
+
+Thresholds, escalation, and human review can exist between inference and downstream action.
+
+---
+
+## 5. AI-Assisted Exception Handling
+
+Amazon Bedrock is separated from the SageMaker inference path through its own gateway component.
+
+The Bedrock Lambda execution role is scoped for:
+
+- Bedrock model invocation
+- DynamoDB result access
+- CloudWatch logging
+- EventBridge event publishing
+- X-Ray tracing
+
+This separation creates an independent control boundary for generative AI functionality.
+
+The Bedrock component is intended to support use cases such as payment exception reasoning, resolution suggestions, and operational assistance without making Bedrock the final business decision authority.
+
+### Implementation Scope
+
+The Terraform provisions the Bedrock gateway infrastructure and required permissions.
+
+The current Lambda handler is a placeholder, so production prompt construction, Bedrock invocation logic, response processing, and application-level audit events would require additional implementation.
+
+---
+
+## 6. Human Escalation Pattern
+
+Amazon EventBridge and Amazon SNS provide the foundation for a human review workflow.
+
+The EventBridge rule looks for a `BedrockRecommendation` event where:
+
+```text
+requires_approval = true
