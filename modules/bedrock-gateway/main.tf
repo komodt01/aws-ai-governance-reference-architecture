@@ -4,7 +4,7 @@
 # 2. Operational automation - incident triage and communication drafting
 #
 # Governance principle: Bedrock informs business decisions, does not make them.
-# All Bedrock outputs are logged. Human approval gate enforced via EventBridge.
+# EventBridge and SNS provide the foundation for a human approval workflow..
 
 resource "aws_iam_role" "bedrock_lambda" {
   name = "${var.name_prefix}-bedrock-lambda"
