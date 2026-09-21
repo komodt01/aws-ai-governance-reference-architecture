@@ -1,8 +1,8 @@
 # Module: monitoring
 # Observability, audit logging, and feedback loop infrastructure
 #
-# Regulatory requirement: All AI model inputs, outputs, and decisions
-# must be logged with minimum 90-day retention.
+# Audit logging and configurable retention support governance
+# operational review, and compliance evidence requirements.
 
 #  AUDIT LOG GROUP 
 resource "aws_cloudwatch_log_group" "ai_audit" {
